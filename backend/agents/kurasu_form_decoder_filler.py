@@ -296,7 +296,7 @@ AGENT_METADATA = AgentMetadata(
   ),
   max_images=5,
   long_wait_message=(
-    "Generating your completed form images -- this step genuinely takes a little longer than a "
-    "normal reply, since it's redrawing your actual form page as a real image…"
+    "Still working on your form -- reading through the details or preparing results can "
+    "genuinely take longer than a normal reply…"
   ),
 )

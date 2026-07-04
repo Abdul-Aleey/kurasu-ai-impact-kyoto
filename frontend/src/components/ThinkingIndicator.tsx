@@ -9,9 +9,19 @@ const DEFAULT_FINAL_STAGE_MESSAGE =
  * rather than reassuring. */
 const EARLY_STAGES: { afterMs: number; text: string }[] = [
   { afterMs: 0, text: "Thinking…" },
-  { afterMs: 3000, text: "Looking into it…" },
-  { afterMs: 8000, text: "Gathering the details…" },
+  { afterMs: 4000, text: "Looking into it…" },
+  { afterMs: 10000, text: "Gathering the details…" },
 ];
+
+// This is purely elapsed-time-based -- a stateless request/response backend
+// gives no real signal for which specific step is in flight, so an
+// agent-specific final phrase (e.g. "generating your images") can't be
+// scoped to only the one turn that's actually true for. Pushed out well
+// past what a normal single-step reply ever takes, so it only realistically
+// shows up on the genuinely slow turns (the first turn's extra extraction
+// pass, or the final turn's real image generation) rather than an
+// occasionally-slow ordinary question turn in between.
+const FINAL_STAGE_AFTER_MS = 22000;
 
 const TICK_MS = 500;
 
@@ -40,7 +50,7 @@ export function ThinkingIndicator({ finalStageMessage = DEFAULT_FINAL_STAGE_MESS
     return () => clearInterval(id);
   }, []);
 
-  const stages = [...EARLY_STAGES, { afterMs: 15000, text: finalStageMessage }];
+  const stages = [...EARLY_STAGES, { afterMs: FINAL_STAGE_AFTER_MS, text: finalStageMessage }];
   const stage = [...stages].reverse().find((s) => elapsedMs >= s.afterMs) ?? stages[0];
 
   return (
