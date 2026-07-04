@@ -13,6 +13,7 @@ AGENT_MODULES = [
   "kurasu_disaster_agent",
   "kurasu_ingredient_checker",
   "kurasu_form_decoder_filler",
+  "kurasu_waste_guide",
 ]
 
 

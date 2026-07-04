@@ -20,6 +20,7 @@ import qr_decode
 import settings
 import shelter_data
 import tts
+import waste_location
 from adk_runtime import content_text, run_agent_stateless
 from agents import kurasu_form_decoder_filler
 from agents.common import GlobalGemini
@@ -442,6 +443,35 @@ async def chat(request: ChatRequest):
                "enable location access for the most accurate results, or tell you a nearby "
                "station or landmark. Only fall back to a single web search for general "
                "evacuation guidance if they still can't provide either.]"
+        ))
+
+    if meta.id == "waste_guide":
+      # Turning GPS into a ward/city name is a real reverse-geocoding
+      # lookup, not something an LLM can reliably derive from raw
+      # coordinates -- computed here and handed to the specialist as
+      # verified context, same pattern as the disaster agent's shelter
+      # lookup above. Every branch injects something, since the
+      # specialist's own instruction expects exactly one of these notes.
+      if has_location:
+        area_name = await waste_location.reverse_geocode_area(
+          request.device_context.lat, request.device_context.lng,
+        )
+        if area_name:
+          new_message.parts.append(types.Part(
+            text=f"[Location identified from GPS (verified reverse-geocoding, use directly, do "
+                 f"not guess or re-derive): {area_name}]"
+          ))
+        else:
+          new_message.parts.append(types.Part(
+            text="[Device location was available but couldn't be matched to a specific "
+                 "ward/city -- if the user's question depends on local specifics, ask them "
+                 "directly which ward/city they mean.]"
+          ))
+      else:
+        new_message.parts.append(types.Part(
+          text="[No device location is available -- if the user's question depends on local "
+               "specifics (collection days, bag rules, local categories), ask them which "
+               "ward/city they mean. If their question is general, proceed without asking.]"
         ))
 
     # EXPERIMENTAL: for form_decoder_filler's fill-mode interview, the photo
