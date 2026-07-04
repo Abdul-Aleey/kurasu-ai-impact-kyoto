@@ -7,6 +7,7 @@ from .schemas import AgentMetadata
 # here. Nothing else in this file, orchestrator.py, server.py, or the
 # frontend shell needs to change.
 AGENT_MODULES = [
+  "kurasu_ask_kurasu",
   "kurasu_clinic_finder",
   "kurasu_delivery_scheduler",
   "kurasu_restaurant_finder",
