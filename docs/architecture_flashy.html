@@ -81,7 +81,8 @@
   svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .wire { fill: none; stroke: var(--line); stroke-width: 1.6; }
   .wire.hot { stroke: var(--shu-dim); stroke-width: 2; stroke-dasharray: 5 7; animation: flow 1.6s linear infinite; opacity: 0.85; }
-  .wire.foundation { stroke: rgba(217,172,90,0.4); stroke-width: 1.6; }
+  .wire.foundation { stroke: rgba(136,148,168,0.3); stroke-width: 1.6; }
+  .wire.wire-gold { stroke: var(--gold); stroke-width: 2.5; filter: drop-shadow(0 0 4px rgba(217,172,90,0.6)); }
 
   .node {
     position: absolute;
@@ -117,6 +118,19 @@
   }
   .agent .icon { font-size: 22px; display:block; margin-bottom: 4px; }
   .agent .name { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 12.5px; color: var(--paper); line-height: 1.25; }
+  .agent.image-model {
+    border-color: var(--gold);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 16px rgba(217,172,90,0.25);
+  }
+  .agent.image-model .badge {
+    display: block;
+    font-family: ui-monospace, monospace;
+    font-size: 8.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 3px;
+  }
 
   .foundation-wrap {
     position: relative;
@@ -215,7 +229,7 @@
     <div class="node agent" id="a3"><span class="icon">🏷️</span><span class="name">Ingredient Checker</span></div>
     <div class="node agent" id="a4"><span class="icon">📦</span><span class="name">Delivery Scheduler</span></div>
     <div class="node agent" id="a5"><span class="icon">🆘</span><span class="name">Disaster Help</span></div>
-    <div class="node agent" id="a6"><span class="icon">📝</span><span class="name">Form Decoder &amp; Filler</span></div>
+    <div class="node agent image-model" id="a6"><span class="icon">📝</span><span class="name">Form Decoder &amp; Filler</span><span class="badge">+ Image Gen</span></div>
     <div class="node agent" id="a7"><span class="icon">🗑️</span><span class="name">Waste Guide</span></div>
   </div>
 
@@ -223,17 +237,17 @@
     <div class="found-card models">
       <h3>🤖 Foundation Models</h3>
       <div class="model-row">
-        <span class="tag text">Text</span>
+        <span class="tag text">Text + Vision</span>
         <div>
           <div class="name">Gemini 3.5 Flash</div>
-          <div class="desc">Reasoning, conversation, structured output — every agent and the orchestrator itself</div>
+          <div class="desc">Every agent and the orchestrator — reasoning, conversation, structured output, and reading any photo given as input (labels, notice slips, form pages)</div>
         </div>
       </div>
       <div class="model-row">
-        <span class="tag multi">Multi-modal</span>
+        <span class="tag multi">Image generation</span>
         <div>
           <div class="name">Gemini 3.1 Flash Image</div>
-          <div class="desc">Reads photos, edits images in place — the completed-form generator</div>
+          <div class="desc"><b style="color:var(--gold)">Form Decoder &amp; Filler only</b> — edits the user's own photo in place to produce the completed form; never reads photos for any agent</div>
         </div>
       </div>
     </div>
@@ -308,11 +322,16 @@
     // client -> hub
     svgHtml += `<path class="wire hot" d="M ${hubX} 40 L ${hubX} ${hubY - hubR}" marker-end="url(#arrow)" />`;
 
+    const IMAGE_MODEL_AGENT_INDEX = 6; // Form Decoder & Filler -- the only agent that also calls the image-generation model
     positions.forEach((p, i) => {
       const midY = (hubY + p.y) / 2;
       svgHtml += `<path class="wire hot" d="M ${hubX} ${hubY + hubR * 0.3} C ${hubX} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y - 40}" />`;
-      // agent -> foundation (converging down)
-      svgHtml += `<path class="wire foundation" d="M ${p.x} ${p.y + 40} L ${p.x} ${foundationTop}" />`;
+      // agent -> foundation (converging down) -- every agent reaches the text
+      // model (all 8 use it for reasoning AND reading any photo input), but
+      // only Form Decoder & Filler also reaches the separate image model, so
+      // that one line is drawn distinctly gold instead of the shared grey.
+      const isImageAgent = i === IMAGE_MODEL_AGENT_INDEX;
+      svgHtml += `<path class="wire ${isImageAgent ? "wire-gold" : "foundation"}" d="M ${p.x} ${p.y + 40} L ${p.x} ${foundationTop}" />`;
     });
 
     svgHtml += `<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--shu-dim)" /></marker></defs>`;
