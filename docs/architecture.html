@@ -1,0 +1,292 @@
+<title>Kurasu AI — System Architecture</title>
+<style>
+  :root {
+    --paper: #F5F1E7;
+    --paper-dim: #EBE5D6;
+    --ink: #1C2333;
+    --indigo: #33507D;
+    --indigo-tint: #E4E9F0;
+    --shu: #B54A26;
+    --shu-tint: #F3E3DA;
+    --moss: #566B4C;
+    --moss-tint: #E4E9DE;
+    --slate: #5E6773;
+    --slate-tint: #E5E7EA;
+    --stone: #8C8471;
+    --stone-tint: #EFEAE0;
+    --rule: #D8D0BE;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #ECE6D6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    margin: 0;
+    padding: 28px 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .slide {
+    width: 100%;
+    max-width: 1320px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    box-shadow: 0 1px 2px rgba(28,35,51,0.06), 0 12px 28px rgba(28,35,51,0.10);
+    padding: 34px 44px 30px;
+  }
+
+  .slide-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .slide-head .tag {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--stone);
+    white-space: nowrap;
+    padding-left: 16px;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .layer {
+    display: grid;
+    grid-template-columns: 168px 1fr;
+    column-gap: 20px;
+    align-items: center;
+    padding: 13px 4px;
+  }
+
+  .layer + .layer {
+    border-top: 1px dashed var(--rule);
+  }
+
+  .layer-label {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+
+  .layer-label strong {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .chip {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+
+  .chip.client   { background: var(--stone-tint);  border-color: #DED5C1; color: #5B5340; }
+  .chip.api      { background: var(--slate-tint);  border-color: #CBD0D6; color: var(--slate); }
+  .chip.orch     { background: var(--indigo-tint); border-color: #C5D0DE; color: var(--indigo); }
+  .chip.agent    { background: var(--shu-tint);     border-color: #E4C4B3; color: var(--shu); font-family: -apple-system, sans-serif; font-weight: 600; }
+  .chip.det      { background: var(--moss-tint);   border-color: #CBD6C2; color: var(--moss); }
+  .chip.ext      { background: #fff; border-color: var(--rule); color: #6B6350; }
+
+  .connector {
+    display: flex;
+    justify-content: center;
+    padding: 3px 0;
+  }
+  .connector svg { display: block; }
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .agent-card {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--shu-tint);
+    border: 1px solid #E4C4B3;
+    border-radius: 3px;
+    padding: 6px 9px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #7A3115;
+  }
+  .agent-card .ic { font-size: 15px; }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 10.5px;
+    color: var(--stone);
+    letter-spacing: 0.03em;
+  }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+
+<div class="slide" id="slide">
+  <div class="slide-head">
+    <h1>Kurasu AI — System Architecture</h1>
+    <div class="tag">STATELESS · MULTI-AGENT · GOOGLE ADK + GEMINI · CLOUD RUN</div>
+  </div>
+
+  <div class="stack">
+
+    <div class="layer">
+      <div class="layer-label"><strong>Client</strong>mobile-first PWA</div>
+      <div class="chips">
+        <span class="chip client">React 19 + TypeScript</span>
+        <span class="chip client">Vite</span>
+        <span class="chip client">Tailwind CSS</span>
+        <span class="chip client">Geolocation API</span>
+        <span class="chip client">MediaRecorder (voice)</span>
+        <span class="chip client">Installable PWA</span>
+      </div>
+    </div>
+
+    <div class="connector">
+      <svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 0 V11 M3 7 L9 13 L15 7" stroke="#8C8471" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="text-align:center; font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--stone); margin-top:-8px;">HTTPS · POST /api/chat (JSON, full history replayed each call)</div>
+
+    <div class="layer">
+      <div class="layer-label"><strong>API layer</strong>no server session</div>
+      <div class="chips">
+        <span class="chip api">FastAPI</span>
+        <span class="chip api">Uvicorn</span>
+        <span class="chip api">Docker</span>
+        <span class="chip api">Cloud Build → Cloud Run</span>
+        <span class="chip api">any instance serves any request</span>
+      </div>
+    </div>
+
+    <div class="connector">
+      <svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 0 V11 M3 7 L9 13 L15 7" stroke="#8C8471" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="layer">
+      <div class="layer-label"><strong>Orchestration</strong>one, shared, generic</div>
+      <div class="chips">
+        <span class="chip orch">Generic Orchestrator</span>
+        <span class="chip orch">Gemini structured output (output_schema)</span>
+        <span class="chip orch">declarative RequiredField per agent</span>
+        <span class="chip orch">collecting → ready → hands off FULL conversation</span>
+      </div>
+    </div>
+
+    <div class="connector">
+      <svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 0 V11 M3 7 L9 13 L15 7" stroke="#8C8471" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="text-align:center; font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--stone); margin-top:-8px;">routes to exactly one matching specialist</div>
+
+    <div class="layer">
+      <div class="layer-label"><strong>Specialists</strong>8 domain agents</div>
+      <div class="agent-grid">
+        <div class="agent-card"><span class="ic">🧭</span>Ask Kurasu</div>
+        <div class="agent-card"><span class="ic">🏥</span>Clinic Finder</div>
+        <div class="agent-card"><span class="ic">🍽️</span>Restaurant Guide</div>
+        <div class="agent-card"><span class="ic">🏷️</span>Ingredient Checker</div>
+        <div class="agent-card"><span class="ic">📦</span>Delivery Scheduler</div>
+        <div class="agent-card"><span class="ic">🆘</span>Disaster Help</div>
+        <div class="agent-card"><span class="ic">📝</span>Form Decoder &amp; Filler</div>
+        <div class="agent-card"><span class="ic">🗑️</span>Waste Guide</div>
+      </div>
+    </div>
+
+    <div class="connector">
+      <svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 0 V11 M3 7 L9 13 L15 7" stroke="#8C8471" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="text-align:center; font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--stone); margin-top:-8px;">specialists call down into verified, deterministic services — never guess what code can compute exactly</div>
+
+    <div class="layer">
+      <div class="layer-label"><strong>Deterministic services</strong>compute → inject</div>
+      <div class="chips">
+        <span class="chip det">QR decode (OpenCV)</span>
+        <span class="chip det">Haversine shelter distance</span>
+        <span class="chip det">Reverse geocoding</span>
+        <span class="chip det">JST clock correction</span>
+        <span class="chip det">Playwright browser automation</span>
+        <span class="chip det">Image generation + overlay fallback</span>
+      </div>
+    </div>
+
+    <div class="connector">
+      <svg width="18" height="16" viewBox="0 0 18 16"><path d="M9 0 V11 M3 7 L9 13 L15 7" stroke="#8C8471" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="layer">
+      <div class="layer-label"><strong>External infrastructure</strong></div>
+      <div class="chips">
+        <span class="chip ext">Vertex AI · Gemini 3.5 Flash</span>
+        <span class="chip ext">Gemini 3.1 Flash Image</span>
+        <span class="chip ext">Google Search grounding</span>
+        <span class="chip ext">Cloud Storage (GSI shelter data)</span>
+        <span class="chip ext">OpenStreetMap Nominatim</span>
+        <span class="chip ext">Cloud Text-to-Speech</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <div class="legend">
+      <span><span class="dot" style="background:var(--stone)"></span>Client</span>
+      <span><span class="dot" style="background:var(--slate)"></span>API</span>
+      <span><span class="dot" style="background:var(--indigo)"></span>Orchestration</span>
+      <span><span class="dot" style="background:var(--shu)"></span>Specialists</span>
+      <span><span class="dot" style="background:var(--moss)"></span>Deterministic</span>
+      <span><span class="dot" style="background:#6B6350"></span>External</span>
+    </div>
+    <div>KURASU AI — IMPACT KYOTO</div>
+  </div>
+</div>

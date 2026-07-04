@@ -1,0 +1,402 @@
+<title>Kurasu AI — Agent Flow Reference</title>
+<style>
+  :root {
+    --paper: #F5F1E7;
+    --ink: #1C2333;
+    --indigo: #33507D;
+    --indigo-tint: #E4E9F0;
+    --shu: #B54A26;
+    --shu-tint: #F3E3DA;
+    --moss: #566B4C;
+    --moss-tint: #E4E9DE;
+    --slate: #5E6773;
+    --slate-tint: #E5E7EA;
+    --stone: #8C8471;
+    --stone-tint: #EFEAE0;
+    --rule: #D8D0BE;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: #ECE6D6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    margin: 0;
+    padding: 36px 20px 60px;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  header.doc-head {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 34px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  .doc-head p {
+    margin: 0;
+    max-width: 60ch;
+    color: #4A4433;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .doc-head .tag {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--stone);
+    white-space: nowrap;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0 34px;
+    padding: 14px 18px;
+    background: #fff;
+    border: 1px solid var(--rule);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #4A4433;
+  }
+  .legend-item .swatch {
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 880px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    box-shadow: 0 1px 2px rgba(28,35,51,0.05);
+    padding: 20px 22px 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .card.wide { grid-column: 1 / -1; }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .card-head .ic { font-size: 20px; line-height: 1; }
+  .card-head h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .card-sub {
+    font-size: 12.5px;
+    color: var(--stone);
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .node {
+    position: relative;
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 9px 4px;
+  }
+  .node-tag {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 3px;
+    text-align: center;
+    white-space: nowrap;
+    height: fit-content;
+  }
+  .node-body {
+    font-size: 13px;
+    line-height: 1.45;
+    padding-top: 3px;
+  }
+  .node-body b { font-weight: 600; }
+
+  .node.input  .node-tag { background: var(--stone-tint); color: #5B5340; }
+  .node.orch   .node-tag { background: var(--indigo-tint); color: var(--indigo); }
+  .node.det    .node-tag { background: var(--moss-tint); color: var(--moss); }
+  .node.llm    .node-tag { background: var(--shu-tint); color: var(--shu); }
+  .node.ext    .node-tag { background: var(--slate-tint); color: var(--slate); }
+  .node.resp   .node-tag { background: var(--ink); color: var(--paper); }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    padding-left: 45px;
+    height: 16px;
+  }
+  .arrow svg { display: block; }
+
+  .branch-label {
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--stone);
+    padding-left: 45px;
+    margin: 2px 0 -2px;
+    letter-spacing: 0.03em;
+  }
+
+  .loop-wrap {
+    position: relative;
+    padding-left: 20px;
+    border-left: 2px dotted #C7BFA9;
+    margin-left: 44px;
+  }
+  .loop-tag {
+    font-family: ui-monospace, monospace;
+    font-size: 9.5px;
+    color: var(--shu);
+    letter-spacing: 0.04em;
+    padding: 2px 0 4px;
+  }
+
+  footer.doc-foot {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-family: ui-monospace, monospace;
+    font-size: 10.5px;
+    color: var(--stone);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+
+<div class="page">
+  <header class="doc-head">
+    <div>
+      <h1>Kurasu AI — Agent Flow Reference</h1>
+      <p>How a request actually moves through the system for each of the 8 specialist agents, from the user's first message to the final response.</p>
+    </div>
+    <div class="tag">v1 · IMPACT KYOTO</div>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch" style="background:var(--stone-tint); border:1px solid #DED5C1"></span>User input</div>
+    <div class="legend-item"><span class="swatch" style="background:var(--indigo-tint)"></span>Orchestrator</div>
+    <div class="legend-item"><span class="swatch" style="background:var(--moss-tint)"></span>Deterministic / verified compute</div>
+    <div class="legend-item"><span class="swatch" style="background:var(--shu-tint)"></span>Specialist (LLM) reasoning</div>
+    <div class="legend-item"><span class="swatch" style="background:var(--slate-tint)"></span>External tool / API call</div>
+    <div class="legend-item"><span class="swatch" style="background:var(--ink)"></span>Final response</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ASK KURASU -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🧭</span><h2>Ask Kurasu</h2></div>
+      <p class="card-sub">General entry point — the user doesn't need to know which feature fits.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Asks a general question, in their own words — optionally with location.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Minimal required fields — reaches <b>ready</b> almost immediately.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Decides: answer directly / ask exactly one clarifying question / recommend a specific existing feature.</div></div>
+        <div class="branch-label">↳ if answering directly</div>
+        <div class="node ext"><div class="node-tag">Search</div><div class="node-body">Google Search, preferring official/government sources for rules and procedures.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Direct answer, or a one-line recommendation to open the right feature.</div></div>
+      </div>
+    </div>
+
+    <!-- CLINIC FINDER -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🏥</span><h2>Clinic Finder</h2></div>
+      <p class="card-sub">Matches symptoms to nearby care that can actually treat them.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Describes symptoms, with location (device GPS or a landmark).</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Collects symptoms + location before handoff.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node ext"><div class="node-tag">Search</div><div class="node-body">Finds real nearby clinics/hospitals matching the described symptoms.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Explains fit in plain English — what each place actually treats.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Ranked clinic list with map links.</div></div>
+      </div>
+    </div>
+
+    <!-- RESTAURANT GUIDE -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🍽️</span><h2>Restaurant Guide</h2></div>
+      <p class="card-sub">Finds where to eat for a craving or dietary need.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Describes cravings or dietary needs, with location.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Collects craving/diet + location.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node ext"><div class="node-tag">Search</div><div class="node-body">Finds real nearby restaurants and menu information.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Translates/explains menu items and dietary fit.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Restaurant picks with why each one fits.</div></div>
+      </div>
+    </div>
+
+    <!-- INGREDIENT CHECKER -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🏷️</span><h2>Ingredient Checker</h2></div>
+      <p class="card-sub">Reads a label photo and checks it against a dietary need.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Uploads a product/ingredient photo, states the concern (halal, vegan, allergy…).</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Collects photo + dietary concern.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Reads the photo directly (vision) and reasons about each ingredient against the stated concern.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Safe / not safe / unclear verdict, with the specific ingredient(s) responsible.</div></div>
+      </div>
+    </div>
+
+    <!-- DELIVERY SCHEDULER -->
+    <div class="card">
+      <div class="card-head"><span class="ic">📦</span><h2>Delivery Scheduler</h2></div>
+      <p class="card-sub">The only feature that submits a real request on the user's behalf.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Uploads a notice photo/QR or types a tracking number, states a time preference.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Collects tracking info + time (and optional date) preference.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node det"><div class="node-tag">Deterministic</div><div class="node-body">QR code pixel-decoded directly (OpenCV) — never guessed from the photo.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">A decoded link alone is enough reason to attempt automation — no OCR branding confirmation required.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node ext"><div class="node-tag">Automation</div><div class="node-body">Real headless browser: opens the link → advances to the date/time step → selects time + date → submits.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Genuine confirmation if scheduled — otherwise honest fallback with manual steps.</div></div>
+      </div>
+    </div>
+
+    <!-- DISASTER HELP -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🆘</span><h2>Disaster Help</h2></div>
+      <p class="card-sub">Safety-critical — minimal friction, government data only.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Describes an emergency (or just needs a safe place), with location.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">GPS-priority, never delays on crisis type.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node det"><div class="node-tag">Deterministic</div><div class="node-body">Haversine nearest-shelter calc over Japan Gov (GSI) open shelter data.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Calm, urgent tone — safety instruction first, then shelters.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Nearest outdoor sites + indoor shelters, each with a map link and source cited.</div></div>
+      </div>
+    </div>
+
+    <!-- WASTE GUIDE -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🗑️</span><h2>Waste Guide</h2></div>
+      <p class="card-sub">Rules are set per municipality, not nationally — location matters.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Asks a waste question, with location (or names a ward/city directly).</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Location optional — skipped for general questions.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node det"><div class="node-tag">Deterministic</div><div class="node-body">GPS reverse-geocoded to an exact ward/city (OpenStreetMap Nominatim).</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">Searches that exact municipality's real rules — categories, days, bag requirements.</div></div>
+        <div class="branch-label">↳ if nothing reliable is found</div>
+        <div class="node resp" style="background:none; border:1px dashed var(--rule)"><div class="node-tag" style="background:var(--stone-tint); color:#5B5340">Fallback</div><div class="node-body">Says so honestly, offers general guidance, suggests Form Decoder &amp; Filler for a local pamphlet.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Concrete sorting rules for that exact address.</div></div>
+      </div>
+    </div>
+
+    <!-- FORM DECODER & FILLER (wide, branching) -->
+    <div class="card wide">
+      <div class="card-head"><span class="ic">📝</span><h2>Form Decoder &amp; Filler</h2></div>
+      <p class="card-sub">The most involved flow — a real back-and-forth interview, then two generated bilingual images. Branches into two modes after intent is known.</p>
+      <div class="flow">
+        <div class="node input"><div class="node-tag">User</div><div class="node-body">Uploads 1–5 form photos (one per page), states <b>decode</b> or <b>fill</b>.</div></div>
+        <div class="arrow"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="node orch"><div class="node-tag">Orchestrator</div><div class="node-body">Collects photo(s) + explicit intent.</div></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin-top:6px;">
+        <div>
+          <div class="branch-label" style="padding-left:0; font-weight:600; color:var(--ink); font-size:11px;">BRANCH A — DECODE</div>
+          <div class="flow">
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node llm"><div class="node-tag">Specialist</div><div class="node-body">One-shot: explains the form's purpose and every field, in plain English.</div></div>
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Plain-English explanation — no file generated.</div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="branch-label" style="padding-left:0; font-weight:600; color:var(--ink); font-size:11px;">BRANCH B — FILL</div>
+          <div class="flow">
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node det"><div class="node-tag">Deterministic</div><div class="node-body">Photo read <b>once</b>: every field, label, choice-option, and branching condition identified.</div></div>
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="loop-wrap">
+              <div class="loop-tag">↻ REPEATS ONE FIELD AT A TIME</div>
+              <div class="node llm" style="grid-template-columns:78px 1fr;"><div class="node-tag">Specialist</div><div class="node-body">Asks the next applicable field — silently skips any field whose condition isn't met.</div></div>
+            </div>
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node det"><div class="node-tag">Deterministic</div><div class="node-body">Once complete: answers structured with fill-type (write/circle/check/shade) and position.</div></div>
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node ext"><div class="node-tag">Generation</div><div class="node-body">Every page × language pair rendered <b>concurrently</b> — AI image-edit, with a deterministic overlay fallback per page.</div></div>
+            <div class="arrow" style="padding-left:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0v10M2 6l5 5 5-5" stroke="#8C8471" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="node resp"><div class="node-tag">Response</div><div class="node-body">Completed form, as real images, in English and Japanese.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="doc-foot">
+    <span>KURASU AI — IMPACT KYOTO</span>
+    <span>ALL 8 FLOWS SHARE ONE STATELESS BACKEND — SEE ARCHITECTURE.HTML</span>
+  </footer>
+</div>
