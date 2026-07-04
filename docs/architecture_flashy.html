@@ -1,0 +1,326 @@
+<title>Kurasu AI — Architecture</title>
+<style>
+  @keyframes pulse {
+    0%, 100% { filter: drop-shadow(0 0 22px rgba(232, 98, 47, 0.55)) drop-shadow(0 0 50px rgba(232, 98, 47, 0.25)); }
+    50%      { filter: drop-shadow(0 0 34px rgba(232, 98, 47, 0.8)) drop-shadow(0 0 70px rgba(232, 98, 47, 0.4)); }
+  }
+  @keyframes flow {
+    to { stroke-dashoffset: -24; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+  }
+
+  :root {
+    --void: #0E1320;
+    --panel: #182238;
+    --panel-2: #1F2C48;
+    --shu: #E8622F;
+    --shu-dim: #B54A26;
+    --gold: #D9AC5A;
+    --paper: #F1ECDE;
+    --mist: #8894A8;
+    --line: rgba(136, 148, 168, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(ellipse 900px 600px at 50% 8%, rgba(232,98,47,0.10), transparent 60%),
+      radial-gradient(ellipse 1000px 500px at 50% 100%, rgba(217,172,90,0.08), transparent 60%),
+      var(--void);
+    color: var(--paper);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 1560px;
+  }
+
+  .masthead {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .masthead h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    margin: 0;
+    text-wrap: balance;
+    background: linear-gradient(180deg, #FBF6E8, #D9AC5A 140%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .masthead .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.18em;
+    color: var(--shu);
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+  .masthead .sub {
+    font-size: 14px;
+    color: var(--mist);
+    margin: 10px 0 0;
+  }
+
+  .diagram {
+    position: relative;
+    margin-top: 18px;
+  }
+
+  svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .wire { fill: none; stroke: var(--line); stroke-width: 1.6; }
+  .wire.hot { stroke: var(--shu-dim); stroke-width: 2; stroke-dasharray: 5 7; animation: flow 1.6s linear infinite; opacity: 0.85; }
+  .wire.foundation { stroke: rgba(217,172,90,0.4); stroke-width: 1.6; }
+
+  .node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .client {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .client .icon { font-size: 30px; }
+  .client .label { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--mist); text-transform: uppercase; }
+
+  .hub {
+    width: 190px; height: 190px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #FF8354, var(--shu) 55%, var(--shu-dim) 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    animation: pulse 3.4s ease-in-out infinite;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .hub .icon { font-size: 34px; }
+  .hub .title { font-family: "Iowan Old Style", Georgia, serif; font-weight: 700; font-size: 18px; color: #241004; }
+  .hub .caption { font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: 0.05em; color: #3A1B0A; max-width: 140px; line-height: 1.35; }
+
+  .agent {
+    width: 150px;
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid rgba(217,172,90,0.28);
+    border-radius: 10px;
+    padding: 12px 10px 11px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  }
+  .agent .icon { font-size: 22px; display:block; margin-bottom: 4px; }
+  .agent .name { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 12.5px; color: var(--paper); line-height: 1.25; }
+
+  .foundation-wrap {
+    position: relative;
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 16px;
+  }
+
+  .found-card {
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .found-card.models { border-color: rgba(217,172,90,0.5); }
+
+  .found-card h3 {
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .found-card.models h3 { color: var(--gold); }
+  .found-card.services h3 { color: var(--mist); }
+
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+  }
+  .model-row + .model-row { border-top: 1px dashed rgba(217,172,90,0.2); }
+  .model-row .tag {
+    font-family: ui-monospace, monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .model-row .tag.text { background: rgba(217,172,90,0.18); color: var(--gold); }
+  .model-row .tag.multi { background: rgba(232,98,47,0.18); color: #FF9868; }
+  .model-row .name { font-weight: 600; font-size: 14px; color: var(--paper); }
+  .model-row .desc { font-size: 11.5px; color: var(--mist); margin-top: 1px; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: rgba(136,148,168,0.12);
+    color: var(--mist);
+    border: 1px solid rgba(136,148,168,0.22);
+  }
+
+  .footline {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 26px; padding-top: 14px; border-top: 1px solid rgba(136,148,168,0.2);
+    font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--mist); letter-spacing: 0.05em;
+  }
+  .footline .key { display: flex; gap: 16px; flex-wrap: wrap; }
+  .footline .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .footline .dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+
+<div class="stage">
+  <div class="masthead">
+    <p class="eyebrow">Kurasu AI</p>
+    <h1>One Orchestrator. Eight Minds. One Conversation.</h1>
+    <p class="sub">Stateless multi-agent architecture — Google ADK + Gemini, on Cloud Run</p>
+  </div>
+
+  <div class="diagram" id="diagram">
+    <svg class="wires" id="wires"></svg>
+
+    <div class="node client" id="node-client">
+      <div class="icon">📱</div>
+      <div class="label">User Request</div>
+    </div>
+
+    <div class="node hub" id="node-hub">
+      <div class="icon">🧠</div>
+      <div class="title">Orchestrator</div>
+      <div class="caption">reads intent · routes to one agent · hands off the full conversation</div>
+    </div>
+
+    <div class="node agent" id="a0"><span class="icon">🧭</span><span class="name">Ask Kurasu</span></div>
+    <div class="node agent" id="a1"><span class="icon">🏥</span><span class="name">Clinic Finder</span></div>
+    <div class="node agent" id="a2"><span class="icon">🍽️</span><span class="name">Restaurant Guide</span></div>
+    <div class="node agent" id="a3"><span class="icon">🏷️</span><span class="name">Ingredient Checker</span></div>
+    <div class="node agent" id="a4"><span class="icon">📦</span><span class="name">Delivery Scheduler</span></div>
+    <div class="node agent" id="a5"><span class="icon">🆘</span><span class="name">Disaster Help</span></div>
+    <div class="node agent" id="a6"><span class="icon">📝</span><span class="name">Form Decoder &amp; Filler</span></div>
+    <div class="node agent" id="a7"><span class="icon">🗑️</span><span class="name">Waste Guide</span></div>
+  </div>
+
+  <div class="foundation-wrap" id="foundation">
+    <div class="found-card models">
+      <h3>🤖 Foundation Models</h3>
+      <div class="model-row">
+        <span class="tag text">Text</span>
+        <div>
+          <div class="name">Gemini 3.5 Flash</div>
+          <div class="desc">Reasoning, conversation, structured output — every agent and the orchestrator itself</div>
+        </div>
+      </div>
+      <div class="model-row">
+        <span class="tag multi">Multi-modal</span>
+        <div>
+          <div class="name">Gemini 3.1 Flash Image</div>
+          <div class="desc">Reads photos, edits images in place — the completed-form generator</div>
+        </div>
+      </div>
+    </div>
+    <div class="found-card services">
+      <h3>✅ Deterministic Services &amp; External Data</h3>
+      <div class="chip-row">
+        <span class="chip">QR Decode</span>
+        <span class="chip">Haversine Distance</span>
+        <span class="chip">Reverse Geocoding</span>
+        <span class="chip">JST Clock</span>
+        <span class="chip">Browser Automation</span>
+        <span class="chip">Google Search</span>
+        <span class="chip">GSI Shelter Data</span>
+        <span class="chip">Cloud TTS</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footline">
+    <div class="key">
+      <span><span class="dot" style="background:var(--shu)"></span>Orchestrator</span>
+      <span><span class="dot" style="background:var(--panel-2); border:1px solid var(--gold)"></span>Specialist agents</span>
+      <span><span class="dot" style="background:var(--gold)"></span>Foundation models</span>
+    </div>
+    <div>STATELESS · ANY INSTANCE SERVES ANY REQUEST</div>
+  </div>
+</div>
+
+<script>
+  function layout() {
+    const diagram = document.getElementById("diagram");
+    const hub = document.getElementById("node-hub");
+    const client = document.getElementById("node-client");
+    const svg = document.getElementById("wires");
+
+    const W = diagram.clientWidth;
+    const hubX = W / 2;
+    const hubY = 240;
+    const hubR = 95;
+
+    client.style.left = hubX + "px";
+    client.style.top = "20px";
+    hub.style.left = hubX + "px";
+    hub.style.top = hubY + "px";
+
+    const n = 8;
+    const cardWidth = 150;
+    const marginX = Math.max(90, cardWidth / 2 + 10);
+    const usableWidth = W - marginX * 2;
+    const spacing = usableWidth / (n - 1);
+    const bandY = hubY + 300;
+    const arcDepth = 55; // outer agents sit lower than the center ones, for a gentle bowl shape
+
+    const positions = [];
+    for (let i = 0; i < n; i++) {
+      const x = marginX + i * spacing;
+      const t = (i / (n - 1)) * 2 - 1; // -1 (left) .. 0 (center) .. 1 (right)
+      const y = bandY + Math.abs(t) * arcDepth;
+      positions.push({ x, y });
+      const el = document.getElementById("a" + i);
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+    }
+
+    diagram.style.height = (Math.max(...positions.map(p => p.y)) + 90) + "px";
+
+    // Draw wires: client -> hub, hub -> each agent, each agent -> foundation band
+    const foundation = document.getElementById("foundation");
+    const foundationTop = diagram.offsetHeight + 40; // relative offset into the SVG's own coordinate space (diagram height)
+
+    let svgHtml = "";
+    // client -> hub
+    svgHtml += `<path class="wire hot" d="M ${hubX} 40 L ${hubX} ${hubY - hubR}" marker-end="url(#arrow)" />`;
+
+    positions.forEach((p, i) => {
+      const midY = (hubY + p.y) / 2;
+      svgHtml += `<path class="wire hot" d="M ${hubX} ${hubY + hubR * 0.3} C ${hubX} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y - 40}" />`;
+      // agent -> foundation (converging down)
+      svgHtml += `<path class="wire foundation" d="M ${p.x} ${p.y + 40} L ${p.x} ${foundationTop}" />`;
+    });
+
+    svgHtml += `<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--shu-dim)" /></marker></defs>`;
+
+    svg.innerHTML = svgHtml;
+    svg.setAttribute("height", diagram.offsetHeight + 40);
+  }
+
+  window.addEventListener("load", () => setTimeout(layout, 60));
+  window.addEventListener("resize", layout);
+</script>

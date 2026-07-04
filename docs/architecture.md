@@ -5,7 +5,10 @@ Cloud Run, one shared orchestrator, 8 domain specialists, and a deterministic-se
 that computes real answers instead of letting the model guess at them.
 
 > Need this as a single image for a slide deck? [`architecture_slide.png`](./architecture_slide.png)
-> is the same diagram pre-rendered and ready to paste in as-is.
+> is the same diagram pre-rendered and ready to paste in as-is. For a hero-style visual (dark,
+> glowing hub-and-spoke) instead of the plain reference diagram, see
+> [`architecture_flashy.png`](./architecture_flashy.png) — open [`architecture_flashy.html`](./architecture_flashy.html)
+> directly in a browser for the animated version.
 
 ```mermaid
 flowchart TD
