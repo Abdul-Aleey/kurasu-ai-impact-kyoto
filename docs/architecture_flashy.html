@@ -41,6 +41,7 @@
   .stage {
     width: 100%;
     max-width: 1560px;
+    position: relative;
   }
 
   .masthead {
@@ -78,7 +79,7 @@
     margin-top: 18px;
   }
 
-  svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 5; }
   .wire { fill: none; stroke: var(--line); stroke-width: 1.6; }
   .wire.hot { stroke: var(--shu-dim); stroke-width: 2; stroke-dasharray: 5 7; animation: flow 1.6s linear infinite; opacity: 0.85; }
   .wire.foundation { stroke: rgba(136,148,168,0.3); stroke-width: 1.6; }
@@ -203,6 +204,8 @@
 </style>
 
 <div class="stage">
+  <svg class="wires" id="wires"></svg>
+
   <div class="masthead">
     <p class="eyebrow">Kurasu AI</p>
     <h1>One Orchestrator. Eight Minds. One Conversation.</h1>
@@ -210,8 +213,6 @@
   </div>
 
   <div class="diagram" id="diagram">
-    <svg class="wires" id="wires"></svg>
-
     <div class="node client" id="node-client">
       <div class="icon">📱</div>
       <div class="label">User Request</div>
@@ -236,14 +237,14 @@
   <div class="foundation-wrap" id="foundation">
     <div class="found-card models">
       <h3>🤖 Foundation Models</h3>
-      <div class="model-row">
+      <div class="model-row" id="row-text">
         <span class="tag text">Text + Vision</span>
         <div>
           <div class="name">Gemini 3.5 Flash</div>
           <div class="desc">Every agent and the orchestrator — reasoning, conversation, structured output, and reading any photo given as input (labels, notice slips, form pages)</div>
         </div>
       </div>
-      <div class="model-row">
+      <div class="model-row" id="row-image">
         <span class="tag multi">Image generation</span>
         <div>
           <div class="name">Gemini 3.1 Flash Image</div>
@@ -278,6 +279,7 @@
 
 <script>
   function layout() {
+    const stage = document.querySelector(".stage");
     const diagram = document.getElementById("diagram");
     const hub = document.getElementById("node-hub");
     const client = document.getElementById("node-client");
@@ -292,6 +294,13 @@
     client.style.top = "20px";
     hub.style.left = hubX + "px";
     hub.style.top = hubY + "px";
+
+    // The wires SVG lives at the .stage level (not inside .diagram) so it
+    // can paint OVER the foundation cards below -- those cards have an
+    // opaque background and come later in the DOM, so a wire scoped to
+    // .diagram's own stacking context would end up hidden behind them
+    // instead of visibly terminating at the right row.
+    const diagramOffsetY = diagram.offsetTop;
 
     const n = 8;
     const cardWidth = 150;
@@ -314,30 +323,62 @@
 
     diagram.style.height = (Math.max(...positions.map(p => p.y)) + 90) + "px";
 
-    // Draw wires: client -> hub, hub -> each agent, each agent -> foundation band
-    const foundation = document.getElementById("foundation");
-    const foundationTop = diagram.offsetHeight + 40; // relative offset into the SVG's own coordinate space (diagram height)
+    // Every coordinate below is expressed in .stage's coordinate space (the
+    // wires SVG's own parent now), so anything originally computed relative
+    // to .diagram needs diagramOffsetY added before use in a path.
+    const hubYs = hubY + diagramOffsetY;
+    const foundationTop = diagram.offsetHeight + diagramOffsetY + 40;
+
+    // Measure exactly where the two model rows actually sit, so the wires
+    // visibly terminate AT the right row inside the card instead of just
+    // stopping at the card's outer edge (which reads as "not connected to
+    // anything specific").
+    const stageRect = stage.getBoundingClientRect();
+    const textRowRect = document.getElementById("row-text").getBoundingClientRect();
+    const imageRowRect = document.getElementById("row-image").getBoundingClientRect();
+    const modelsCardRect = document.querySelector(".found-card.models").getBoundingClientRect();
+    const textRowPoint = {
+      x: textRowRect.left - stageRect.left + 14,
+      y: textRowRect.top - stageRect.top + textRowRect.height / 2,
+    };
+    const imageRowPoint = {
+      x: imageRowRect.left - stageRect.left + 14,
+      y: imageRowRect.top - stageRect.top + imageRowRect.height / 2,
+    };
+    const modelsCardBottom = modelsCardRect.bottom - stageRect.top;
 
     let svgHtml = "";
     // client -> hub
-    svgHtml += `<path class="wire hot" d="M ${hubX} 40 L ${hubX} ${hubY - hubR}" marker-end="url(#arrow)" />`;
+    svgHtml += `<path class="wire hot" d="M ${hubX} ${40 + diagramOffsetY} L ${hubX} ${hubYs - hubR}" marker-end="url(#arrow)" />`;
 
     const IMAGE_MODEL_AGENT_INDEX = 6; // Form Decoder & Filler -- the only agent that also calls the image-generation model
     positions.forEach((p, i) => {
-      const midY = (hubY + p.y) / 2;
-      svgHtml += `<path class="wire hot" d="M ${hubX} ${hubY + hubR * 0.3} C ${hubX} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y - 40}" />`;
-      // agent -> foundation (converging down) -- every agent reaches the text
-      // model (all 8 use it for reasoning AND reading any photo input), but
-      // only Form Decoder & Filler also reaches the separate image model, so
-      // that one line is drawn distinctly gold instead of the shared grey.
-      const isImageAgent = i === IMAGE_MODEL_AGENT_INDEX;
-      svgHtml += `<path class="wire ${isImageAgent ? "wire-gold" : "foundation"}" d="M ${p.x} ${p.y + 40} L ${p.x} ${foundationTop}" />`;
+      const py = p.y + diagramOffsetY;
+      const midY = (hubYs + py) / 2;
+      svgHtml += `<path class="wire hot" d="M ${hubX} ${hubYs + hubR * 0.3} C ${hubX} ${midY}, ${p.x} ${midY}, ${p.x} ${py - 40}" />`;
+
+      // agent -> foundation (converging down), continuing all the way to the
+      // TEXT model's row specifically -- every agent uses it, so every line
+      // actually terminates there, not at the card's outer edge.
+      svgHtml += `<path class="wire foundation" d="M ${p.x} ${py + 40} L ${p.x} ${foundationTop} C ${p.x} ${foundationTop + 40}, ${textRowPoint.x} ${textRowPoint.y - 30}, ${textRowPoint.x} ${textRowPoint.y}" />`;
+      svgHtml += `<circle cx="${textRowPoint.x}" cy="${textRowPoint.y}" r="2.5" fill="var(--gold)" opacity="0.6" />`;
+
+      // Form Decoder & Filler ALSO reaches the separate image-generation
+      // model -- drawn as a second, distinctly gold path terminating
+      // precisely at that row. Routed to dip BELOW both foundation cards
+      // and approach the image row from underneath, rather than cutting
+      // diagonally across the Deterministic Services card's own text.
+      if (i === IMAGE_MODEL_AGENT_INDEX) {
+        const under = modelsCardBottom + 30;
+        svgHtml += `<path class="wire wire-gold" d="M ${p.x} ${py + 40} L ${p.x} ${under} C ${(p.x + imageRowPoint.x) / 2} ${under + 20}, ${imageRowPoint.x + 40} ${under}, ${imageRowPoint.x + 40} ${imageRowPoint.y} L ${imageRowPoint.x} ${imageRowPoint.y}" />`;
+        svgHtml += `<circle cx="${imageRowPoint.x}" cy="${imageRowPoint.y}" r="3.5" fill="var(--gold)" />`;
+      }
     });
 
     svgHtml += `<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--shu-dim)" /></marker></defs>`;
 
     svg.innerHTML = svgHtml;
-    svg.setAttribute("height", diagram.offsetHeight + 40);
+    svg.setAttribute("height", modelsCardBottom + 60);
   }
 
   window.addEventListener("load", () => setTimeout(layout, 60));
