@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+google-adk
+google-genai
+python-dotenv
+pydantic
+playwright
+httpx
+numpy
+opencv-python-headless
+pandas
+google-cloud-storage
+Pillow

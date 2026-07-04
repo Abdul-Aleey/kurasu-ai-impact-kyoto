@@ -1,0 +1,11 @@
+backend/.env.local
+backend/__pycache__/
+backend/**/__pycache__/
+backend/static/
+
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+.venv/
+.git/
